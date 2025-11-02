@@ -2,17 +2,22 @@ package app
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
 	"support-bot/config"
+	"support-bot/internal/handler"
+	"support-bot/internal/repo"
+	"support-bot/internal/service"
 	"support-bot/pkg/postgres"
 	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/sirupsen/logrus"
 )
 
 func Run(configPath string) {
@@ -23,13 +28,14 @@ func Run(configPath string) {
 	}
 
 	// Logger
-	logrusLevel, err := log.ParseLevel(cfg.Log.Level)
+	log := logrus.New()
+	logrusLevel, err := logrus.ParseLevel(cfg.Log.Level)
 	if err != nil {
-		log.SetLevel(log.DebugLevel)
+		log.SetLevel(logrus.DebugLevel)
 	} else {
 		log.SetLevel(logrusLevel)
 	}
-	log.SetFormatter(&log.JSONFormatter{
+	log.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 	log.SetOutput(os.Stdout)
@@ -45,12 +51,19 @@ func Run(configPath string) {
 
 	// Repositories
 	log.Info("Init repositories...")
+	repositories := repo.NewRepositories(pg)
 
 	// Services
 	log.Info("Init services...")
+	service.NewServices(service.ServicesDependencies{
+		Log:   log,
+		Repos: repositories,
+		// ...
+	})
 
 	// TG bot
 	log.Info("Init Telegarm bot...")
+	bot := runBot(cfg.TG.Token, log)
 
 	// Server healthy
 	log.Info("Init HTTP server...")
@@ -64,6 +77,7 @@ func Run(configPath string) {
 
 	// TG bot stopping
 	log.Info("Bot stopping...")
+	bot.StopReceivingUpdates()
 	log.Info("Bot stopped")
 
 	// Wait 5 sec
@@ -79,6 +93,32 @@ func Run(configPath string) {
 	log.Info("Server stopped")
 }
 
+/**
+ * Telegram bot
+ */
+func runBot(token string, log *logrus.Logger) *tgbotapi.BotAPI {
+	bot, err := tgbotapi.NewBotAPI(token)
+	if err != nil {
+		log.Fatalf("app - Run - init TG bot error: %w", err)
+	}
+
+	updates := bot.GetUpdatesChan(tgbotapi.UpdateConfig{
+		Timeout: 60,
+	})
+	messageHandler := handler.NewHandler(bot, log)
+
+	go func() {
+		for update := range updates {
+			messageHandler.Handle(update)
+		}
+	}()
+
+	return bot
+}
+
+/**
+ * Health monitoring and metrics
+ */
 func runServer(port string) *http.Server {
 	type MetricsResponse struct {
 		Goroutines    int    `json:"goroutines"`
