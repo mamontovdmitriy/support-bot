@@ -55,15 +55,14 @@ func Run(configPath string) {
 
 	// Services
 	log.Info("Init services...")
-	service.NewServices(service.ServicesDependencies{
-		Log:   log,
+	services := service.NewServices(log, &service.ServicesDependencies{
 		Repos: repositories,
 		// ...
 	})
 
 	// TG bot
 	log.Info("Init Telegarm bot...")
-	bot := runBot(cfg.TG.Token, log)
+	bot := runBot(cfg.TG.Token, services)
 
 	// Server healthy
 	log.Info("Init HTTP server...")
@@ -96,16 +95,16 @@ func Run(configPath string) {
 /**
  * Telegram bot
  */
-func runBot(token string, log *logrus.Logger) *tgbotapi.BotAPI {
+func runBot(token string, services *service.Services) *tgbotapi.BotAPI {
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
-		log.Fatalf("app - Run - init TG bot error: %w", err)
+		services.Log.Fatalf("app - Run - init TG bot error: %w", err)
 	}
 
 	updates := bot.GetUpdatesChan(tgbotapi.UpdateConfig{
 		Timeout: 60,
 	})
-	messageHandler := handler.NewHandler(bot, log)
+	messageHandler := handler.NewHandler(bot, services)
 
 	go func() {
 		for update := range updates {
