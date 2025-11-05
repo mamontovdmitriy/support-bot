@@ -15,6 +15,7 @@ type (
 	Services struct {
 		Log           *logrus.Logger
 		MessageUpdate *MessageUpdateService
+		UserInfoPost  *UserInfoPostService
 		// Auth        Auth
 	}
 )
@@ -23,6 +24,7 @@ func NewServices(log *logrus.Logger, deps *ServicesDependencies) *Services {
 	return &Services{
 		Log:           log,
 		MessageUpdate: NewMesssageUpdateService(deps.Repos.MessageUpdate),
+		UserInfoPost:  NewUserInfoPostService(deps.Repos.UserInfoPost),
 		// Auth: NewAuthService(deps.Repos.User, deps.Hasher, deps.SignKey, deps.TokenTTL),
 	}
 }

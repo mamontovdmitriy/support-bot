@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"runtime/debug"
+	"support-bot/config"
 	"support-bot/internal/entity"
 	"support-bot/internal/service"
 
@@ -18,16 +18,19 @@ type (
 	}
 
 	Handler struct {
+		cfg      config.TG
 		bot      *tg.BotAPI
 		services *service.Services
 
 		defaultUpdateHandler UpdateHandler
+		// unknownCommandHandler UpdateHandler
 		// ...
 	}
 )
 
-func NewHandler(bot *tg.BotAPI, services *service.Services) *Handler {
+func NewHandler(cfg config.TG, bot *tg.BotAPI, services *service.Services) *Handler {
 	return &Handler{
+		cfg:      cfg,
 		bot:      bot,
 		services: services,
 
@@ -47,23 +50,24 @@ func (c *Handler) Handle(update tg.Update) {
 
 	// Processing message or callback
 	switch {
+	// case update.ChannelPost != nil:
+	// c.handleChannelPost(update.ChannelPost)
 	case update.CallbackQuery != nil:
 		c.handleCallback(update.CallbackQuery)
 	case update.Message != nil:
 		c.handleMessage(update.Message)
+	case update.EditedMessage != nil:
+		c.handleMessage(update.EditedMessage)
 	}
 }
 
 func (c *Handler) saveMessageUpdate(update tg.Update) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	content, err := json.Marshal(update)
 	if err != nil {
 		c.services.Log.Warnf("can not marshal to json: %v", update)
 		return
 	}
-	c.services.MessageUpdate.Create(ctx, entity.MessageUpdate{
+	c.services.MessageUpdate.Create(entity.MessageUpdate{
 		Id:      update.UpdateID,
 		Message: string(content),
 	})
@@ -72,7 +76,7 @@ func (c *Handler) saveMessageUpdate(update tg.Update) {
 func (c *Handler) handleCallback(callback *tg.CallbackQuery) {
 	switch callback.Data {
 	case "test":
-		break
+
 	default:
 		c.services.Log.Warnf("Handler.handleCallback: unknown domain - %s", callback.Data)
 	}
@@ -80,27 +84,17 @@ func (c *Handler) handleCallback(callback *tg.CallbackQuery) {
 
 func (c *Handler) handleMessage(message *tg.Message) {
 	if !message.IsCommand() {
-		c.showWarningUnknownCommand(message)
+		c.proxyMessage(message)
 		return
 	}
 
 	switch message.Command() {
+	case "start":
+	case "help":
 	case "test":
 		outputMessage := tg.NewMessage(message.Chat.ID, fmt.Sprintf("Handle command: %s", message.Command()))
 		c.bot.Send(outputMessage)
-		break
 	default:
 		c.services.Log.Warnf("Handler.handleCommand: unknown command - %s", message.Command())
-	}
-}
-
-func (c *Handler) showWarningUnknownCommand(inputMessage *tg.Message) {
-	c.services.Log.Errorf("handler - unknown command - %v", inputMessage.Text)
-
-	outputMessage := tg.NewMessage(inputMessage.Chat.ID, fmt.Sprintf("Unknown command - %s", inputMessage.Command()))
-
-	_, err := c.bot.Send(outputMessage)
-	if err != nil {
-		c.services.Log.Errorf("Handler.showWarningUnknownCommand: error sending reply message to chat - %v", err)
 	}
 }

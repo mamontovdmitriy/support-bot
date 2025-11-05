@@ -14,9 +14,16 @@ type MessageUpdate interface {
 	GetList(ctx context.Context) ([]entity.MessageUpdate, error)
 }
 
+type UserInfoPost interface {
+	Add(ctx context.Context, entity entity.UserInfoPost) error
+	// Edit(ctx context.Context, postId int64, fwrdId int64) error
+	GetList(ctx context.Context) (map[int64]int64, error)
+}
+
 type (
 	Repositories struct {
 		MessageUpdate
+		UserInfoPost
 		// ...
 	}
 )
@@ -24,6 +31,7 @@ type (
 func NewRepositories(pg *postgres.Postgres) *Repositories {
 	return &Repositories{
 		MessageUpdate: pgdb.NewRepoMessageUpdate(pg),
+		UserInfoPost:  pgdb.NewRepoUserInfoPost(pg),
 		// ...
 	}
 }

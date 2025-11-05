@@ -62,7 +62,7 @@ func Run(configPath string) {
 
 	// TG bot
 	log.Info("Init Telegarm bot...")
-	bot := runBot(cfg.TG.Token, services)
+	bot := runBot(cfg.TG, services)
 
 	// Server healthy
 	log.Info("Init HTTP server...")
@@ -95,8 +95,8 @@ func Run(configPath string) {
 /**
  * Telegram bot
  */
-func runBot(token string, services *service.Services) *tgbotapi.BotAPI {
-	bot, err := tgbotapi.NewBotAPI(token)
+func runBot(cfgTg config.TG, services *service.Services) *tgbotapi.BotAPI {
+	bot, err := tgbotapi.NewBotAPI(cfgTg.Token)
 	if err != nil {
 		services.Log.Fatalf("app - Run - init TG bot error: %w", err)
 	}
@@ -104,7 +104,7 @@ func runBot(token string, services *service.Services) *tgbotapi.BotAPI {
 	updates := bot.GetUpdatesChan(tgbotapi.UpdateConfig{
 		Timeout: 60,
 	})
-	messageHandler := handler.NewHandler(bot, services)
+	messageHandler := handler.NewHandler(cfgTg, bot, services)
 
 	go func() {
 		for update := range updates {

@@ -14,6 +14,9 @@ func NewMesssageUpdateService(repo repo.MessageUpdate) *MessageUpdateService {
 	return &MessageUpdateService{repo: repo}
 }
 
-func (s *MessageUpdateService) Create(ctx context.Context, entity entity.MessageUpdate) (int, error) {
+func (s *MessageUpdateService) Create(entity entity.MessageUpdate) (int, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	return s.repo.Create(ctx, entity)
 }

@@ -34,7 +34,10 @@ type (
 	}
 
 	TG struct {
-		Token string `env-required:"true" env:"TG_TOKEN"`
+		Token        string `env-required:"true" env:"TG_TOKEN"`
+		PublicId     int64  `env-required:"true" env:"TG_PUBLIC_ID"`
+		ChannelId    int64  `env-required:"true" env:"TG_CHANNEL_ID"`
+		SystemUserId int64  `env-required:"true" env:"TG_SYSTEM_USER_ID"`
 	}
 )
 

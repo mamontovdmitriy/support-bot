@@ -27,7 +27,7 @@ func (r *RepoMessageUpdate) Create(ctx context.Context, entity entity.MessageUpd
 		Values(entity.Id, entity.Message).
 		ToSql()
 
-	result, err := r.Pool.Exec(ctx, sql+" RETURNING id ", args...)
+	result, err := r.Pool.Exec(ctx, sql, args...)
 	if err != nil {
 		return 0, err
 	}
