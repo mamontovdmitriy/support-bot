@@ -36,34 +36,31 @@ func (c *Handler) proxyMessage(message *tg.Message) {
 		return // ignore messages from Telegram
 	}
 
-	if message.SenderChat != nil {
-		// response to bot
-		if message.ReplyToMessage == nil {
-			msgText := fmt.Sprintf("Сообщение не доставлено!\n\nНе указат получатель ответа.\nДля этого отвечайте на сообщение с 'User ID: ***'.")
-			_, err := c.bot.Send(tg.NewMessage(c.cfg.ChannelId, msgText))
-			if err != nil {
-				c.services.Log.Warnf("Handler.proxyMessage: error sending hint  %v", err)
-				// show resend button
-				return
-			}
-		} else {
-			userId, err := extractUserId(message.ReplyToMessage.Text)
-			if err != nil {
-				c.services.Log.Warn("Handler.proxyMessage: regexp failed - userId not found in ReplyToMessage")
-				return
-			}
-			_, err = c.bot.CopyMessage(tg.NewCopyMessage(userId, message.Chat.ID, message.MessageID))
-			if err != nil {
-				c.services.Log.Errorf("Handler.proxyMessage: error coping reply message to bot - %v", err)
-				// show resend button
-			}
+	// response to bot
+	if message.ReplyToMessage != nil {
+		userId, err := extractUserId(message.ReplyToMessage.Text)
+		if err != nil {
+			c.services.Log.Warn("Handler.proxyMessage: regexp failed - userId not found in ReplyToMessage")
+			return
 		}
+		_, err = c.bot.CopyMessage(tg.NewCopyMessage(userId, message.Chat.ID, message.MessageID))
+		if err != nil {
+			c.services.Log.Errorf("Handler.proxyMessage: error coping reply message to bot - %v", err)
+			// show resend button
+		}
+		return
+	}
 
-		// // check public id
-		// if message.SenderChat.ID != c.cfg.PublicId {
-		// 	c.services.Log.Warnf("Handler.proxyMessage: received message from unknown chat %d", message.SenderChat.ID)
-		// }
-		c.services.Log.Info("Handler.proxyMessage: ignore messages from Telegram SenderChat")
+	// ответ в группе без указания адресата
+	if message.SenderChat != nil {
+		msgText := fmt.Sprintf("Сообщение не доставлено!\n\nНе указат получатель ответа.\nДля этого отвечайте на сообщение с 'User ID: ***'.")
+		_, err := c.bot.Send(tg.NewMessage(c.cfg.ChannelId, msgText))
+		if err != nil {
+			c.services.Log.Warnf("Handler.proxyMessage: error sending hint  %v", err)
+			// show resend button
+			return
+		}
+		c.services.Log.Info("Handler.proxyMessage: ignore messages from Telegram")
 		return // ignore messages from Telegram
 	}
 
