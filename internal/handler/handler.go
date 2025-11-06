@@ -22,9 +22,11 @@ type (
 		bot      *tg.BotAPI
 		services *service.Services
 
-		defaultUpdateHandler UpdateHandler
-		// unknownCommandHandler UpdateHandler
-		// ...
+		defaultUpdateHandler  UpdateHandler
+		startCommandHandler   UpdateHandler
+		helpCommandHandler    UpdateHandler
+		infoCommandHandler    UpdateHandler
+		unknownCommandHandler UpdateHandler
 	}
 )
 
@@ -34,7 +36,11 @@ func NewHandler(cfg config.TG, bot *tg.BotAPI, services *service.Services) *Hand
 		bot:      bot,
 		services: services,
 
-		defaultUpdateHandler: nil,
+		defaultUpdateHandler:  nil,
+		startCommandHandler:   NewStartCommandHandler(bot),
+		helpCommandHandler:    NewHelpCommandHandler(bot),
+		infoCommandHandler:    NewInfoCommandHandler(bot),
+		unknownCommandHandler: NewUnknownCommandHandler(bot),
 	}
 }
 
@@ -89,12 +95,19 @@ func (c *Handler) handleMessage(message *tg.Message) {
 	}
 
 	switch message.Command() {
-	case "start":
-	case "help":
+	// debug
 	case "test":
 		outputMessage := tg.NewMessage(message.Chat.ID, fmt.Sprintf("Handle command: %s", message.Command()))
 		c.bot.Send(outputMessage)
+
+	case "start":
+		c.startCommandHandler.HandleCommand(message)
+	case "help":
+		c.helpCommandHandler.HandleCommand(message)
+	case "info":
+		c.infoCommandHandler.HandleCommand(message)
 	default:
 		c.services.Log.Warnf("Handler.handleCommand: unknown command - %s", message.Command())
+		c.unknownCommandHandler.HandleCommand(message)
 	}
 }
