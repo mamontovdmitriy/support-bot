@@ -24,8 +24,11 @@ func Run(configPath string) {
 	// Configuration
 	cfg, err := config.NewConfig(configPath)
 	if err != nil {
-		log.Fatalf("app - Run - config error: %w", err)
+		log.Fatalf("app - Run - config error: %v", err)
 	}
+
+	// miniapp for health checking
+	healthcheck(cfg.Port)
 
 	// Logger
 	log := logrus.New()
@@ -45,7 +48,7 @@ func Run(configPath string) {
 	log.Info("Init postgres...")
 	pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.MaxPoolSize))
 	if err != nil {
-		log.Fatalf("app - Run - postgres error: %w", err)
+		log.Fatalf("app - Run - postgres error: %v", err)
 	}
 	defer pg.Close()
 
@@ -98,7 +101,7 @@ func Run(configPath string) {
 func runBot(cfgTg config.TG, services *service.Services) *tgbotapi.BotAPI {
 	bot, err := tgbotapi.NewBotAPI(cfgTg.Token)
 	if err != nil {
-		services.Log.Fatalf("app - Run - init TG bot error: %w", err)
+		services.Log.Fatalf("app - Run - init TG bot error: %v", err)
 	}
 
 	updates := bot.GetUpdatesChan(tgbotapi.UpdateConfig{
@@ -153,4 +156,14 @@ func runServer(port string) *http.Server {
 	}()
 
 	return srv
+}
+
+func healthcheck(port string) {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		resp, err := http.Get("http://localhost:" + port + "/health")
+		if err == nil && resp.StatusCode == http.StatusOK {
+			os.Exit(0)
+		}
+		os.Exit(1)
+	}
 }

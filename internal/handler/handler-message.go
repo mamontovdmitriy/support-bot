@@ -10,6 +10,10 @@ import (
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+var (
+	reExtractUserId = regexp.MustCompile(`(?i)User\s?ID:\s?([-\d]+)`)
+)
+
 /**
  * Пересылка сообщения клиента из бота в комментарий соответствующего поста в группе обсуждения
  * Оратная пересылка сообщения менеджера из комментов соответствующему клиенту.
@@ -19,7 +23,7 @@ func (c *Handler) proxyMessage(message *tg.Message) {
 	if message.ForwardFromChat != nil && message.ForwardFromChat.ID == c.cfg.PublicId {
 		userId, err := extractUserId(message.Text)
 		if err != nil {
-			c.services.Log.Warn("Handler.proxyMessage: regexp failed - userId not found")
+			c.services.Log.Warn("Handler.proxyMessage: userId not found")
 			return
 		}
 
@@ -40,7 +44,7 @@ func (c *Handler) proxyMessage(message *tg.Message) {
 	if message.ReplyToMessage != nil {
 		userId, err := extractUserId(message.ReplyToMessage.Text)
 		if err != nil {
-			c.services.Log.Warn("Handler.proxyMessage: regexp failed - userId not found in ReplyToMessage")
+			c.services.Log.Warn("Handler.proxyMessage: userId not found in ReplyToMessage")
 			return
 		}
 		_, err = c.bot.CopyMessage(tg.NewCopyMessage(userId, message.Chat.ID, message.MessageID))
@@ -113,7 +117,7 @@ func (c *Handler) copyMessage(forwardPostId int64, message *tg.Message) {
 }
 
 func extractUserId(text string) (int64, error) {
-	match := regexp.MustCompile(`User ID: (\d+)`).FindStringSubmatch(text)
+	match := reExtractUserId.FindStringSubmatch(text)
 
 	if len(match) == 0 {
 		return 0, errors.New("regexp failed - userId not found")

@@ -45,3 +45,30 @@ cover: ### run test with coverage
 	go tool cover -func=coverage.out
 	rm coverage.out
 .PHONY: coverage
+
+
+
+generate-deploy-key: ### generate rsa keys for deploy
+	ssh-keygen -q -t rsa -N '' -f !deploy/deploy_rsa
+.PHONY: generate-deploy-key
+
+build:
+	docker --log-level=info build --pull --file=./Dockerfile --tag=${REGISTRY}/support-bot:${IMAGE_TAG} .
+.PHONY: build
+
+deploy:
+	ssh -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa deploy@${HOST} -p ${PORT} 'docker network create --driver=overlay traefik-public || true'
+	ssh -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa deploy@${HOST} -p ${PORT} 'rm -rf support_bot_${BUILD_NUMBER} && mkdir support_bot_${BUILD_NUMBER}'
+
+	envsubst < docker-compose-production.yaml > docker-compose-production-env.yml
+	scp -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa -P ${PORT} docker-compose-production-env.yml deploy@${HOST}:support_bot_${BUILD_NUMBER}/docker-compose.yml
+	scp -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa -P ${PORT} ./.env.prod deploy@${HOST}:support_bot_${BUILD_NUMBER}/.env
+	scp -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa -P ${PORT} -r ./loki deploy@${HOST}:support_bot_${BUILD_NUMBER}/loki
+	rm -f docker-compose-production-env.yml
+
+	ssh -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa deploy@${HOST} -p ${PORT} 'cd support_bot_${BUILD_NUMBER} && docker stack deploy --compose-file ./docker-compose.yml support_bot --with-registry-auth --prune'
+
+deploy-clean:
+	rm -f docker-compose-production-env.yml
+
+

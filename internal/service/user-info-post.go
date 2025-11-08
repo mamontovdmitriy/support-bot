@@ -35,24 +35,6 @@ func (s *UserInfoPostService) SaveUserInfoPost(userId int64, forwardPostId int64
 	return nil
 }
 
-// func (s *UserInfoPostService) SaveForwardId(postId int64, fwrdId int64) error {
-// 	s.mu.Lock()
-// 	defer s.mu.Unlock()
-
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	defer cancel()
-
-// 	err := s.repo.Edit(ctx, postId, fwrdId)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// s.list[userId] = postId
-// 	// s.rlist[postId] = userId
-
-// 	return nil
-// }
-
 func (s *UserInfoPostService) GetForwardId(userId int64) (int64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
