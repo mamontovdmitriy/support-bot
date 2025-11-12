@@ -5,21 +5,13 @@ import (
 )
 
 type StartCommandHandler struct {
-	bot *tg.BotAPI
+	BaseDependencies
 }
 
-func NewStartCommandHandler(bot *tg.BotAPI) *StartCommandHandler {
-	return &StartCommandHandler{
-		bot: bot,
-	}
+func NewStartCommandHandler(baseDeps BaseDependencies) *StartCommandHandler {
+	return &StartCommandHandler{BaseDependencies: baseDeps}
 }
 
-func (h *StartCommandHandler) HandleCallback(callback *tg.CallbackQuery) {}
-
-func (h *StartCommandHandler) HandleCommand(callback *tg.Message) {
-	h.bot.Send(tg.NewMessage(callback.Chat.ID, "📬 Служба поддержки клиентов\n"+
-		"\n"+
-		"Здесь Вы можете проконсультироваться и получить ответы непосредственно от официальных представителей компании.\n"+
-		"\n"+
-		"Это легко и удобно! Просто напишите Ваш вопрос🙂\n"))
+func (h *StartCommandHandler) HandleCommand(message *tg.Message) {
+	h.SendTemplate(message.Chat.ID, "cmd-start.html", nil)
 }

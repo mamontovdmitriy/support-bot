@@ -66,6 +66,7 @@ func Run(configPath string) {
 	// TG bot
 	log.Info("Init Telegarm bot...")
 	bot := runBot(cfg.TG, services)
+	log.Infof("Authorized on account %s", bot.Self.UserName)
 
 	// Server healthy
 	log.Info("Init HTTP server...")

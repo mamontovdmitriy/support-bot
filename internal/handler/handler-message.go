@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 	"time"
@@ -57,13 +56,7 @@ func (c *Handler) proxyMessage(message *tg.Message) {
 
 	// ответ в группе без указания адресата
 	if message.SenderChat != nil {
-		msgText := fmt.Sprintf("Сообщение не доставлено!\n\nНе указат получатель ответа.\nДля этого отвечайте на сообщение с 'User ID: ***'.")
-		_, err := c.bot.Send(tg.NewMessage(c.cfg.ChannelId, msgText))
-		if err != nil {
-			c.services.Log.Warnf("Handler.proxyMessage: error sending hint  %v", err)
-			// show resend button
-			return
-		}
+		c.SendTemplate(c.cfg.ChannelId, "msg-error-empty-reply.html", nil)
 		c.services.Log.Info("Handler.proxyMessage: ignore messages from Telegram")
 		return // ignore messages from Telegram
 	}
@@ -73,13 +66,7 @@ func (c *Handler) proxyMessage(message *tg.Message) {
 	forwardPostId, err := c.services.UserInfoPost.GetForwardId(userId)
 	if err != nil {
 		// Create user info post
-		msgText := fmt.Sprintf("User ID: %d\n--\n", userId)
-		_, err := c.bot.Send(tg.NewMessage(c.cfg.PublicId, msgText))
-		if err != nil {
-			c.services.Log.Warnf("Handler.proxyMessage: error send post %v", err)
-			// show resend button
-			return
-		}
+		c.SendTemplate(c.cfg.PublicId, "client-profile.html", struct{ UserID int64 }{UserID: userId})
 
 		// Wait for creation of forward post
 		go func() {

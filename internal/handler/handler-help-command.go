@@ -5,20 +5,13 @@ import (
 )
 
 type HelpCommandHandler struct {
-	bot *tg.BotAPI
+	BaseDependencies
 }
 
-func NewHelpCommandHandler(bot *tg.BotAPI) *HelpCommandHandler {
-	return &HelpCommandHandler{
-		bot: bot,
-	}
+func NewHelpCommandHandler(baseDeps BaseDependencies) *HelpCommandHandler {
+	return &HelpCommandHandler{BaseDependencies: baseDeps}
 }
 
-func (h *HelpCommandHandler) HandleCallback(callback *tg.CallbackQuery) {}
-
-func (h *HelpCommandHandler) HandleCommand(callback *tg.Message) {
-	h.bot.Send(tg.NewMessage(callback.Chat.ID, "Список доступных команд:\n"+
-		"\n"+
-		"/start - рекомендации для начала работы\n"+
-		"/help - справочная информация\n"))
+func (h *HelpCommandHandler) HandleCommand(message *tg.Message) {
+	h.SendTemplate(message.Chat.ID, "cmd-help.html", nil)
 }
