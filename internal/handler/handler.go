@@ -95,7 +95,7 @@ func (c *Handler) Handle(update tg.Update) {
 		}
 	}()
 
-	// Save all request here ...
+	// Save all request in db
 	c.saveMessageUpdate(update)
 
 	// Processing message or callback
@@ -154,10 +154,6 @@ func (c *Handler) handleMessage(message *tg.Message) {
 }
 
 func (c *Handler) handleChatMember(chatMember *tg.ChatMemberUpdated) {
-	// userBot := chatMember.NewChatMember.User
-
-	// id := chatMember.Chat.ID
-
 	switch chatMember.Chat.Type {
 	case "channel": // public for posts
 		c.channelChatMemberHandler.HandleChatMember(chatMember)
