@@ -20,10 +20,11 @@ networks:
 volumes:
   pg-data:
   loki-data: 
+  grafana-config:
+  grafana-data:
 
 services:
   postgres:
-    container_name: postgres
     image: postgres:alpine
     volumes:
       - pg-data:/var/lib/postgresql/data
@@ -84,7 +85,7 @@ services:
       - default
     volumes:
       - ./loki/loki.yaml:/etc/loki/loki.yaml:ro
-      # - loki-data:/loki
+      - loki-data:/loki
     deploy:
       mode: replicated
       replicas: 1
@@ -104,14 +105,16 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     networks:
       - traefik-public
       - default
     depends_on:
       - loki
-#    volumes:
-#      - ./grafana-config:/etc/grafana
-#      - ./grafana_data:/var/lib/grafana
+    volumes:
+      - grafana-config:/etc/grafana
+      - ./grafana/loki.yaml:/etc/grafana/provisioning/datasources/loki.yaml
+      - grafana-data:/var/lib/grafana
     deploy:
       mode: replicated
       replicas: 1

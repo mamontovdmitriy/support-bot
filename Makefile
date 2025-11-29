@@ -64,6 +64,7 @@ deploy:
 	scp -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa -P ${PORT} docker-compose-production-env.yml deploy@${HOST}:support_bot_${BUILD_NUMBER}/docker-compose.yml
 	scp -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa -P ${PORT} ./.env.prod deploy@${HOST}:support_bot_${BUILD_NUMBER}/.env
 	scp -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa -P ${PORT} -r ./loki deploy@${HOST}:support_bot_${BUILD_NUMBER}/loki
+	scp -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa -P ${PORT} -r ./grafana deploy@${HOST}:support_bot_${BUILD_NUMBER}/grafana
 	rm -f docker-compose-production-env.yml
 
 	ssh -o StrictHostKeyChecking=no -i ./!deploy/deploy_rsa deploy@${HOST} -p ${PORT} 'cd support_bot_${BUILD_NUMBER} && docker stack deploy --compose-file ./docker-compose.yml support_bot --with-registry-auth --prune'
